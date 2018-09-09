@@ -1,0 +1,10 @@
+air = build.blockState("minecraft:air", "");
+frameBlock = build.blockState("chisel:factory", "variation=1");
+platBlock = build.blockState("chisel:factory", "variation=0");
+ventBlock = build.blockState("chisel:factory", "variation=4");
+wallBlock = build.blockState("chisel:technical", "variation=9");
+dirt = build.blockState("minecraft:dirt", "variant=dirt");
+stone = build.blockState("minecraft:stone", "variant=stone");
+sandstone =  build.blockState("minecraft:sandstone", "type=sandstone");
+hazardBlock = build.blockState("chisel:factory", "variation=6");
+
