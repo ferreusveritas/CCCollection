@@ -9,7 +9,7 @@ dofile("blocks");
 local D, U, N, S, W, E = dirMap(0);
 
 local compy = build.Coord:get();
-local center = compy:off(radius + 3, N);
+local center = compy:off(N, radius + 3);
 local vol = build.cuboid(center):grohor(radius + 3);
 
 build.cuboid(compy:up()):gro(2,U):grohor():erase(); --Erase Monitors
@@ -38,11 +38,11 @@ center:up():cylinder(wallBlock, radius, height);
 
 build.cuboid(compy:up()):dunswe(0, 2, 1, 0, 1, 1):filla(frameBlock);
 build.cuboid(compy):grohor():loop(platBlock);
-build.cuboid(compy):off(1, S):dunswe(0, 0, 0, 0, 1, 1):erase();
+build.cuboid(compy):off(S, 1):dunswe(0, 0, 0, 0, 1, 1):erase();
 
 --Dendrocoil
-compy:off(1, N):put(build.blockState("mcf:dendrocoil",""));
-build.cuboid(compy:off(1, N):up()):gro(1, U):filla(frameBlock);
+compy:off(N, 1):put(build.blockState("mcf:dendrocoil",""));
+build.cuboid(compy:off(N, 1):up()):gro(1, U):filla(frameBlock);
 
 --Make monitors TODO:  Make monitor placement library
 compy:up():putnbt(build.blockState("computercraft:peripheral", "variant=advanced_monitor_u"), "{dir:3,width:1,height:2,xIndex:0,yIndex:0}");

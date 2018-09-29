@@ -1,34 +1,35 @@
 os.loadAPI("build/build.lua");
 
-c = build.coord(0, 71, 0);
-l = build.coord(c.x + 0, c.y - 3, c.z + 24);
+--API Aliases
+function fif(cond, a, b) return build.fif(cond, a, b); end
+function stairs(dir, inv) return build.getStairs(dir, inv); end
+function dirMap(turns) return build.dirMap(turns); end
+
+
+--c = build.coord(0, 71, 0);
+centerPos = build.coord(-96, 210, -9);
+--l = build.coord(c.x + 0, c.y - 3, c.z + 24);
 height = 8;
 
-function erase()
-  build.killMaps(c.x - 8, c.y - 1, c.z - 8, c.x + 8, c.y + height + 16, c.z + 8);
-  build.erase(c.x - 16, c.y, c.z - 16, c.x + 16, c.y + height + 16, c.z + 16);
-  build.erase(c.x - 16, c.y - 8, c.z - 16, c.x + 16, c.y, c.z + 16);
-  build.erase(l.x - 6, l.y - 6, l.z - 9, l.x + 6, l.y + 4, l.z + 6);
-end
 
-
-function land()
-  build.pillarCuboid(c.x - 16, c.y - 8, c.z - 16, c.x + 16, c.y - 1, c.z + 16);
-  build.fill(c.x - 15, c.y - 1, c.z - 15, c.x + 15, c.y - 1, c.z + 15, build.blockState("minecraft:grass", "snowy=false"));
-  build.fence(c.x - 16, c.z - 16, c.x + 16, c.z + 16, c.y);
+function land(pos)
+  local D, U, N, S, W, E = dirMap(turns);
+  local body = pos:cuboid():grohor(16):gro(D, 8):dwn():box();
+  body:shr():up():filla(build.blockState("minecraft:grass", "snowy=false"));
+  body:top():up():fence();
 
   --Staircase and railing
-  build.pillarCuboid(c.x - 2, c.y - 2, c.z + 12, c.x + 2, c.y - 1, c.z + 16);
+  --[[build.pillarCuboid(c.x - 2, c.y - 2, c.z + 12, c.x + 2, c.y - 1, c.z + 16);
   build.erase(c.x - 1, c.y - 2, c.z + 14, c.x + 1, c.y + 1, c.z + 16);
   build.staircase(c.x - 1, c.z + 13, c.x + 1, c.z + 14, c.y - 2, build.stairs, {build.DIR.S});
-  build.fence(c.x - 2, c.z + 12, c.x + 2, c.z + 16, c.y, {build.DIR.W, build.DIR.E});
+  build.fence(c.x - 2, c.z + 12, c.x + 2, c.z + 16, c.y, {build.DIR.W, build.DIR.E});]]--
 
   --Lower doors
-  build.bigDoor(c.x + 11, c.y - 8, c.z + 16, build.DIR.S, {"l"});
-  build.bigDoor(c.x - 11, c.y - 8, c.z + 16, build.DIR.S, {"l"});
+  --build.bigDoor(c.x + 11, c.y - 8, c.z + 16, build.DIR.S, {"l"});
+  --build.bigDoor(c.x - 11, c.y - 8, c.z + 16, build.DIR.S, {"l"});
 
   --Staircase from lower door
-  build.pillarCuboid(c.x + 2, c.y - 8, c.z + 8, c.x + 12, c.y - 1, c.z + 12);
+  --[[build.pillarCuboid(c.x + 2, c.y - 8, c.z + 8, c.x + 12, c.y - 1, c.z + 12);
   build.fill(c.x + 11, c.y - 8, c.z + 8, c.x + 13, c.y - 2, c.z + 12, build.stone);
   build.erase(c.x + 3, c.y - 7, c.z + 9, c.x + 11, c.y, c.z + 11);
   build.erase(c.x + 12, c.y - 7, c.z + 9, c.x + 12, c.y - 2, c.z + 11);
@@ -37,24 +38,29 @@ function land()
   build.doorHole(c.x + 11, c.y - 7, c.z + 12, 4, 3, build.DIR.S, {"s"});
   build.put(c.x + 11, c.y - 4, c.z + 14, build.blockState("rustic:chain", ""));
   build.lamp(c.x + 11, c.y - 5, c.z + 14, build.DIR.D);
-  build.fence(c.x + 2, c.z + 8, c.x + 12, c.z + 12, c.y, { build.DIR.S, build.DIR.N, build.DIR.E });
+  build.fence(c.x + 2, c.z + 8, c.x + 12, c.z + 12, c.y, { build.DIR.S, build.DIR.N, build.DIR.E });]]--
 
   --Sidewalk
-  build.fill(c.x - 2, c.y - 1, c.z + 8, c.x + 2, c.y - 1, c.z + 12, build.stone);
-  build.loop(c.x - 2, c.z + 8, c.x + 2, c.z + 12, c.y - 1, build.stonechisel, build.stonepaver);
+  --[[build.fill(c.x - 2, c.y - 1, c.z + 8, c.x + 2, c.y - 1, c.z + 12, build.stone);
+  build.loop(c.x - 2, c.z + 8, c.x + 2, c.z + 12, c.y - 1, build.stonechisel, build.stonepaver);]]--
 end
 
 
-function foundation()
-  build.fill(c.x - 8, c.y - 1, c.z - 8, c.x + 8, c.y - 1, c.z + 8, build.stone);
+function foundation(pos)
+  local D, U, N, S, W, E = dirMap(turns);
+  pos:cuboid():grohor(8):gro(U):gro(D):filla(build.stone);
 end
 
 
-function exterior()
-  build.loop(c.x - 8, c.z - 8, c.x + 8, c.z + 8, c.y, build.stone);
-  build.pillarCuboid(c.x - 8, c.y + 1, c.z - 8, c.x + 8, c.y + height, c.z + 8);
-  build.erase(c.x - 7, c.y, c.z - 7, c.x + 7, c.y + height - 1, c.z + 7);
-  for i,dir in pairs(build.DIR.HORIZONTALS) do
+function exterior(pos)
+  local D, U, N, S, W, E = dirMap(turns);
+  local body = pos:cuboid():grohor(8):loop(build.stone);
+  body = body:up():gro(U,7):box();
+  body:shr():erase();
+
+  body:top():shrhor(2):erase();
+
+  --[[for i,dir in pairs(build.DIR.HORIZONTALS) do
     build.bigDoor(c.x + (dir.x * 8), c.y + 1, c.z + (dir.z * 8), dir, {"s", "l"});
   end
   build.loop(c.x - 7, c.z - 7, c.x + 7, c.z + 7, c.y + height, build.stoneknot);
@@ -89,40 +95,46 @@ function exterior()
     build.put(c.x + (crn.x * 8), c.y + height + 3, c.z + (crn.z * 8), build.stonerosette);
     build.put(c.x + (crn.x * 8), c.y + height + 4, c.z + (crn.z * 8), build.stonerailing);
     build.fill(c.x + (crn.x * 8), c.y + height + 5, c.z + (crn.z * 8), c.x + (crn.x * 8), c.y + height + 6, c.z + (crn.z * 8), build.lattice);
-  end
+  end]]--
   
 end
 
 
-function interior()
+function interior(pos)
+  local D, U, N, S, W, E = dirMap(turns);
+
   --Interior Pillars
+  --[[
   for _,crn in pairs(build.corners(0, 0, 0, 1)) do
     build.pillar(c.x + (crn.x * 3), c.y + 1, c.z + (crn.z * 3), height - 1);
     build.pillar(c.x + (crn.x * 3), c.y + 1, c.z + (crn.z * 7), height - 1);
     build.pillar(c.x + (crn.x * 7), c.y + 1, c.z + (crn.z * 3), height - 1);
   end
-  build.loop(c.x - 3, c.z - 3, c.x + 3, c.z + 3, c.y + height, build.stonechisel, build.colFoot);
+  build.loop(c.x - 3, c.z - 3, c.x + 3, c.z + 3, c.y + height, build.stonechisel, build.colFoot);]]--
 
   --Flooring
-  build.checker(c.x - 7, c.z - 7, c.x + 7, c.z + 7, c.y);
+  --build.checker(c.x - 7, c.z - 7, c.x + 7, c.z + 7, c.y);
 end
 
 
-function furnish()
+function furnish(pos)
+  local D, U, N, S, W, E = dirMap(turns);
   --Build map display
-  build.map5x5(c.x - 2, c.y + 2, c.z - 2);
-  build.fill(c.x - 2, c.y + 1, c.z - 3, c.x + 2, c.y + 1, c.z - 3, build.stonewide);
-  build.fill(c.x - 2, c.y + height - 1, c.z - 3, c.x + 2, c.y + height - 1, c.z - 3, build.stoneknot);
+  
+
+  build.map5x5(pos.x, pos.y + 3, pos.z);
+  --build.fill(c.x - 2, c.y + 1, c.z - 3, c.x + 2, c.y + 1, c.z - 3, build.stonewide);
+  --build.fill(c.x - 2, c.y + height - 1, c.z - 3, c.x + 2, c.y + height - 1, c.z - 3, build.stoneknot);
 end
 
 
-function mapBuilding()
-  land();
+function mapBuilding(pos)
+  land(pos);
 
-  foundation();
-  exterior();
-  interior();
-  furnish();
+  foundation(pos);
+  exterior(pos);
+  interior(pos);
+  furnish(pos);
 end
 
 function landing()
@@ -158,10 +170,9 @@ function setBiome()
   terra.setBiome(-16, -16, 16, 16, 2);
 end
 
-erase();
-landing();
-mapBuilding();
-setupSecurity();
+--landing();
+mapBuilding(centerPos);
+--setupSecurity();
 
 --/summon Item -100 71 278 {Item:{id:"dynamictrees:acaciaseed",Count:1,tag:{lifespan:100,forceplant:true,code:JOJxOJxJ+v0nf1t+k06+S1+nXb1+nf1uvy7+k0+XfyWnXb1+nf0mU7ny1uvXWnWvXet1770717} }}
 

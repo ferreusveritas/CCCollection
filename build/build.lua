@@ -32,6 +32,26 @@ function fif(cond, a, b)
 end
 
 ----------------------------------------------------------------
+-- ERASE OR CREATE                                            --
+----------------------------------------------------------------
+
+erase = false;
+
+function setErase(should)
+  erase = should;
+end
+
+----------------------------------------------------------------
+-- SYNC or ASYNC
+----------------------------------------------------------------
+
+sync = false;
+
+function setSync(should)
+  sync = should;
+end
+
+----------------------------------------------------------------
 -- COORDINATES                                                --
 ----------------------------------------------------------------
 
@@ -118,11 +138,16 @@ function Coord:up(amount)
 end
 
 function Coord:dwn(amount)
-  return self:add(Coord:new(0, amount or -1, 0));
+  amount = amount or 1;
+  return self:up(-amount);
 end
 
 function Coord:trn(turns, mirAxis, pos)
   return self:rot(turns or 0):mir(mirAxis or coord()):add(pos or coord());
+end
+
+function Coord:eq(other)
+  return self.x == other.x and self.y == other.y and self.z == other.z;
 end
 
 ----------------------------------------------------------------
@@ -206,6 +231,7 @@ function dirMirrorTable(dir, axis)
 end
 
 function dirMap(turns)
+  turns = turns or 0;
   return
     dirRotate(DIR.D, turns),
     dirRotate(DIR.U, turns),
@@ -215,9 +241,9 @@ function dirMap(turns)
     dirRotate(DIR.E, turns);
 end
 
-function Coord:off(amount, dir)
-  amount = amount or 1;
+function Coord:off(dir, amount)
   dir = dir or DIR.U;
+  amount = amount or 1;
   return self:add(coord(dir.x * amount, dir.y * amount, dir.z * amount));
 end
 
@@ -228,7 +254,7 @@ end
 function blockState(block, data)
   local a = {};
   a.block = block;
-  a.data = data;
+  a.data = data or "";
   return a;
 end
 
@@ -246,6 +272,20 @@ function makeStairs(block, fillBlock)
   return s;
 end
 
+function makeSolidStairs(block, fillBlock)
+  local s = {};
+  s.n = block;
+  s.s = block;
+  s.w = block;
+  s.e = block;
+  s.ni = block;
+  s.si = block;
+  s.wi = block;
+  s.ei = block;
+  s.f = fillBlock;
+  return s;
+end
+
 function makeSlabs(block, variant)
   local s = {};
   s.t = blockState(block, "half=top,variant="..variant);
@@ -253,20 +293,24 @@ function makeSlabs(block, variant)
   return s;
 end
 
-air = blockState("minecraft:air", "");
+air = blockState("minecraft:air");
 stone = blockState("minecraft:stone", "variant=stone");
 stonebrick = blockState("minecraft:stonebrick", "variant=stonebrick");
 stoneknot = blockState("cathedral:extras_block_stone", "variant=knot");
 stonepaver = blockState("cathedral:extras_block_stone", "variant=paver");
 stonechisel = blockState("chisel:stonebrick2", "variation=7");
 stonecircular = blockState("chisel:stonebrick1", "variation=6");
+stonedent = blockState("chisel:stonebrick", "variation=11");
 stonerosette = blockState("minecraft:stonebrick", "variant=chiseled_stonebrick");
 stonewide = blockState("chisel:stonebrick", "variation=3");
 stonerailing = blockState("cathedral:cathedral_railing_various", "variant=stone");
 glass = blockState("chisel:glass", "variation=2");
+dirt = blockState("minecraft:dirt");
 water = blockState("minecraft:water");
 lattice = blockState("rustic:iron_lattice", "leaves=false");
-chain = blockState("rustic:chain", "");
+chain = blockState("rustic:chain");
+
+barsornate = blockState("chisel:ironpane", "variation=6");
 
 basaltpaver = blockState("cathedral:basalt_block_carved", "variant=paver");
 
@@ -286,9 +330,11 @@ tileEven = basaltpaver;
 
 railing = stonerailing;
 
-roofing = makeStairs("cathedral:roofing_shingles_purple", stonebrick);
+roofing = makeStairs("cathedral:roofing_shingles_red", stonebrick);
 stairs = makeStairs("minecraft:stone_brick_stairs", stonebrick);
+airstairs = makeSolidStairs(air, air);
 slab = makeSlabs("minecraft:stone_slab", "stone_brick");
+smoothslab = makeSlabs("minecraft:stone_slab", "stone");
 
 
 ----------------------------------------------------------------
@@ -320,6 +366,10 @@ function cuboid(...)
   if #arg == 2 then return Cuboid:new(arg[1], arg[2]); end
   if #arg == 6 then return Cuboid:newAll(arg[1], arg[2], arg[3], arg[4], arg[5], arg[6]); end
   return Cuboid:newAll(0, 0, 0, 0, 0, 0);
+end
+
+function Coord:cub()
+  return cuboid(self);
 end
 
 function Cuboid:__tostring()
@@ -367,10 +417,10 @@ function Cuboid:len(axis)
   if axis.z ~= 0 then return self[2].z - self[1].z + 1; end;
 end
 
-function Cuboid:gro(amount, dir)
+function Cuboid:gro(dir, amount)
   amount = amount or 1;
   if dir == nil then
-    return self:gro(amount, coord(1, 1, 1)):gro(amount, coord(-1, -1, -1))
+    return self:gro(coord(1, 1, 1), amount):gro(coord(-1, -1, -1), amount)
   end
   local c = self:cpy();
   if dir.x < 0 then c[1].x = c[1].x - amount; end
@@ -382,14 +432,14 @@ function Cuboid:gro(amount, dir)
   return c;
 end
 
-function Cuboid:shr(amount, dir)
+function Cuboid:shr(dir, amount)
   amount = amount or 1;
-  return self:gro(-amount, dir);
+  return self:gro(dir, -amount);
 end
 
-function Cuboid:off(amount, dir)
-  amount = amount or 1;
+function Cuboid:off(dir, amount)
   dir = dir or DIR.U;
+  amount = amount or 1;
   return self:add(coord(dir.x * amount, dir.y * amount, dir.z * amount));
 end
 
@@ -428,11 +478,11 @@ function Cuboid:bot()
 end
 
 function Cuboid:up(amount)
-  return self:off(amount, DIR.U);
+  return self:off(DIR.U, amount);
 end
 
 function Cuboid:dwn(amount)
-  return self:off(amount, DIR.D);
+  return self:off(DIR.D, amount);
 end
 
 function Cuboid:trn(turns, mirAxis, pos)
@@ -442,17 +492,17 @@ end
 function Cuboid:dunswe(d, u, n, s, w, e, t)
   t = t or 0;
   return self
-    :gro(d, dirRotate(DIR.D, t))
-    :gro(u, dirRotate(DIR.U, t))
-    :gro(n, dirRotate(DIR.N, t))
-    :gro(s, dirRotate(DIR.S, t))
-    :gro(w, dirRotate(DIR.W, t))
-    :gro(e, dirRotate(DIR.E, t))
+    :gro(dirRotate(DIR.D, t), d)
+    :gro(dirRotate(DIR.U, t), u)
+    :gro(dirRotate(DIR.N, t), n)
+    :gro(dirRotate(DIR.S, t), s)
+    :gro(dirRotate(DIR.W, t), w)
+    :gro(dirRotate(DIR.E, t), e)
 end
 
 function Cuboid:grohor(amount)
   amount = amount or 1;
-  return self:gro(amount, coord(-1, 0, -1)):gro(amount, coord(1, 0, 1));
+  return self:gro(coord(-1, 0, -1), amount):gro(coord(1, 0, 1), amount);
 end
 
 function Cuboid:shrhor(amount)
@@ -460,60 +510,87 @@ function Cuboid:shrhor(amount)
   return self:grohor(-amount);
 end
 
+function Cuboid:mid()
+  local x = math.floor((self[1].x + self[2].x) / 2);
+  local y = math.floor((self[1].y + self[2].y) / 2);
+  local z = math.floor((self[1].z + self[2].z) / 2);
+  return Cuboid:newAll(x, y, z, x, y, z);
+end
+
+function Cuboid:pos()
+  return self:mid()[1]:cpy();
+end
+
+function Cuboid:xlen()
+  return self[2].x - self[1].x + 1;
+end
+
+function Cuboid:ylen()
+  return self[2].y - self[1].y + 1;
+end
+
+function Cuboid:zlen()
+  return self[2].z - self[1].z + 1;
+end
+
+function Cuboid:len(axis)
+  if axis == 'x' then return self:xlen(); end;
+  if axis == 'y' then return self:ylen(); end;
+  if axis == 'z' then return self:zlen(); end;
+end
+
+function Cuboid:vol()
+  return self:xlen() * self:ylen() * self:zlen();
+end
+
 ----------------------------------------------------------------
 -- BLOCK SETTERS                                              --
 ----------------------------------------------------------------
-
-function Coord:put(state)
-  commands.setblock(self.x, self.y, self.z, state.block, state.data);
-  return self;
-end
-
-function Coord:puta(state)
-  commands.async.setblock(self.x, self.y, self.z, state.block, state.data);
-  return self;
-end
-
-function Coord:erase()
-  return self:puta(air);
-end
 
 function Coord:putnbt(state, tag)
   commands.setblock(self.x, self.y, self.z, state.block, state.data, "replace", tag);
   return self;
 end
 
---deprecated
-function coordsSort(x1, y1, z1, x2, y2, z2)
-  x1, x2 = sort(x1, x2);
-  y1, y2 = sort(y1, y2);
-  z1, z2 = sort(z1, z2);
-  return x1, y1, z1, x2, y2, z2;
-end
-
 function Cuboid:fill(state)
-  commands.fill(self[1].x, self[1].y, self[1].z, self[2].x, self[2].y, self[2].z, state.block, state.data);
+  if state == nil then
+    print("fill attempt for nil state: " .. tostring(self));
+    state = air;
+  end
+  if erase then state = air; end
+  
+  if sync then
+    com = commands;
+  else
+    com = commands.async;
+  end
+
+  if self:vol() == 1 then
+    com.setblock(self[1].x, self[1].y, self[1].z, state.block, state.data);
+  else
+    com.fill(self[1].x, self[1].y, self[1].z, self[2].x, self[2].y, self[2].z, state.block, state.data);
+  end
+
   return self;
 end
 
-function Cuboid:filla(state)
-  commands.async.fill(self[1].x, self[1].y, self[1].z, self[2].x, self[2].y, self[2].z, state.block, state.data);
-  return self;
+function Cuboid:dirt()
+  return self:fill(dirt);
 end
 
 function Cuboid:erase()
-  return self:filla(air);
+  return self:fill(air);
 end
 
 function Cuboid:pillar(pBody, pFoot, pHead)
-  self:filla(pBody or colBody);
-  self:fac(DIR.D):filla(pFoot or colFoot);
-  self:fac(DIR.U):filla(pHead or colHead);
+  self:fill(pBody or colBody);
+  self:fac(DIR.D):fill(pFoot or colFoot);
+  self:fac(DIR.U):fill(pHead or colHead);
   return self;
 end
 
 function Cuboid:checker()
-  self:face(DIR.D):filla(tileOdd);
+  self:face(DIR.D):fill(tileOdd);
   for z = self[1].z, self[2].z do
     for x = self[1].x, self[2].x do
       if( ((x + z) % 2) == 0) then
@@ -528,11 +605,11 @@ function Cuboid:loop(state, corners, sides)
   state = state or stone;
   sides = sides or {DIR.N, DIR.S, DIR.W, DIR.E};
   for _,side in pairs(sides) do
-    self:fac(side):filla(state);
+    self:fac(side):fill(state);
   end
   if(corners ~= nil) then
     for qturn = 0, 3 do
-      self:fac(coord(-1, 0, -1):rot(qturn)):filla(corners);
+      self:fac(coord(-1, 0, -1):rot(qturn)):fill(corners);
     end
   end
   return self;
@@ -575,7 +652,7 @@ function Cuboid:fence(sides)
 end
 
 function Cuboid:box(pFill, pBase, pCrwn, pBody, pFoot, pHead)
-  self:filla(pFill or colFill); --Base Cuboid
+  self:fill(pFill or colFill); --Base Cuboid
   self:bot():loop(pBase or colBase); --Bottom Border
   self:top():loop(pCrwn or colCrwn); --Top Border
   for qturn = 0, 3 do
@@ -584,33 +661,60 @@ function Cuboid:box(pFill, pBase, pCrwn, pBody, pFoot, pHead)
   return self;
 end
 
-local rset = {};
-rset[1] = { {0, 2}, {1, 2}, {2, 1} };
-rset[2] = { {0, 2}, {1, 2}, {2, 1} };
-rset[3] = { {0,3},{1,3},{2,3},{3,2},{3,1} };
-rset[4] = { {0,4},{1,4},{2,4},{3,3},{4,2},{4,1} };
-rset[5] = { {0,5},{1,5},{2,5},{3,4},{4,3},{5,2},{5,1} };
-rset[6] = { {0,6},{1,6},{2,6},{3,5},{4,5},{5,4},{5,3},{6,2},{6,1} };
-rset[7] = { {0,7},{1,7},{2,7},{3,6},{4,6},{5,5},{6,4},{6,3},{7,2},{7,1} };
-rset[8] = { {0,8},{1,8},{2,8},{3,7},{4,7},{5,6},{6,5},{7,4},{7,3},{8,2},{8,1} };
+local rset2 = {
+ { 0, 0 }, --1
+ { 0, 0 }, --2
+ { 0, 0, 1 }, --3
+ { 0, 0, 0, 1 }, --4
+ { 0, 0, 0, 1 }, --5
+ { 0, 0, 0, 1, 1 }, --6
+ { 0, 0, 0, 1, 1, 2 }, --7
+ { 0, 0, 0, 1, 1, 2, 2 }, --8
+ { 0, 0, 0, 0, 1, 1, 2 }, --9
+ { 0, 0, 0, 0, 1, 1, 2, 3 }, --10
+ { 0, 0, 0, 0, 1, 1, 2, 2, 3 }, --11
+ { 0, 0, 0, 0, 1, 1, 2, 2, 3 }, --12
+ { 0, 0, 0, 0, 1, 1, 1, 2, 3, 3 }, --13
+ { 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 4 }, --14
+ { 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 4 }, --15
+ { 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4 } --16
+}
 
-function Coord:circle(block, r)
-  for n, point in pairs(rset[r]) do
-    self:add(coord( point[2], 0,  point[1])):puta(block);
-    self:add(coord( point[1], 0, -point[2])):puta(block);
-    self:add(coord(-point[1], 0,  point[2])):puta(block);
-    self:add(coord(-point[2], 0, -point[1])):puta(block);
+function Coord:circle(block, r, fill)
+  local sel = rset2[r];
+  if fill then
+    for i,d in ipairs(sel) do
+      local x = r - d;
+      local y = i - 1;
+      cuboid(self):off(DIR.N, y):dunswe(0, 0, 0, 0, x, x):fill(block);
+      cuboid(self):off(DIR.N, x):dunswe(0, 0, 0, 0, y, y):fill(block);
+      cuboid(self):off(DIR.S, y):dunswe(0, 0, 0, 0, x, x):fill(block);
+      cuboid(self):off(DIR.S, x):dunswe(0, 0, 0, 0, y, y):fill(block);
+    end
+  else
+    for i,d in ipairs(sel) do
+      local x = r - d;
+      local y = i - 1;
+      self:add(coord( x, 0,-y)):cub():fill(block);
+      self:add(coord(-x, 0,-y)):cub():fill(block);
+      self:add(coord( x, 0, y)):cub():fill(block);
+      self:add(coord(-x, 0, y)):cub():fill(block);
+      self:add(coord( y, 0,-x)):cub():fill(block);
+      self:add(coord(-y, 0,-x)):cub():fill(block);
+      self:add(coord( y, 0, x)):cub():fill(block);
+      self:add(coord(-y, 0, x)):cub():fill(block);
+    end
   end
+  return self;
 end
 
-function Coord:cylinder(block, r, h)
-  for n, point in pairs(rset[r]) do
-    cuboid(self:add(coord( point[2], 0,  point[1]))):gro(h, DIR.U):filla(block);
-    cuboid(self:add(coord( point[1], 0, -point[2]))):gro(h, DIR.U):filla(block);
-    cuboid(self:add(coord(-point[1], 0,  point[2]))):gro(h, DIR.U):filla(block);
-    cuboid(self:add(coord(-point[2], 0, -point[1]))):gro(h, DIR.U):filla(block);
+function Coord:cylinder(block, r, h, fill)
+  for y = 0,h - 1 do
+    self:up(y):circle(block, r, fill);
   end
+  return self;
 end
+
 
 function getStairs(dir, inv, stairsblocks)
   stairsblocks = stairsblocks or stairs;
@@ -639,9 +743,9 @@ function Cuboid:roof(stairBlocks, sides)
 
   for i = 1, h do
     for _,side in pairs(sides) do
-      p:fac(side):filla(stairBlocks[dirLetter(dirOpposite(side))]);
+      p:fac(side):fill(stairBlocks[dirLetter(dirOpposite(side))]);
       if p:len(side) > 1 then
-        p = p:gro(-1, side);
+        p = p:gro(side, -1);
       end
     end
     p = p:up(); --move up one block
@@ -651,7 +755,7 @@ function Cuboid:roof(stairBlocks, sides)
 end
 
 
-function Cuboid:staircase(stairBlocks, sides, filler)
+function Cuboid:stairs(stairBlocks, sides, filler)
   sides = sides or DIR.HORIZONTALS;
   filler = filler or stairBlocks.f;
   
@@ -675,10 +779,10 @@ function Cuboid:staircase(stairBlocks, sides, filler)
 
   for i = 1, h do
     for _,side in pairs(sides) do
-      p:filla(filler);
-      p:fac(side):filla(stairBlocks[dirLetter(dirOpposite(side))]);
+      p:fill(filler);
+      p:fac(side):fill(stairBlocks[dirLetter(dirOpposite(side))]);
       if p:len(side) > 1 then
-        p = p:gro(-1, side);
+        p = p:gro(side, -1);
       end
     end
     p = p:up(); --move up one block
@@ -687,7 +791,7 @@ function Cuboid:staircase(stairBlocks, sides, filler)
 end
 
 
-function Cuboid:staircaseinv(stairBlocks, sides, filler)
+function Cuboid:stairsinv(stairBlocks, sides, filler)
   sides = sides or DIR.HORIZONTALS;
   filler = filler or stairBlocks.f;
 
@@ -711,10 +815,12 @@ function Cuboid:staircaseinv(stairBlocks, sides, filler)
 
   for i = 1, h do
     for _,side in pairs(sides) do
-      p:filla(filler);
-      p:fac(side):filla(stairBlocks[dirLetter(dirOpposite(side)) .. 'i']);
+      if filler ~= 0 then
+        p:fill(filler);
+      end
+      p:fac(side):fill(stairBlocks[dirLetter(dirOpposite(side)) .. 'i']);
       if p:len(side) > 1 then
-        p = p:gro(-1, side);
+        p = p:gro(side, -1);
       end
     end
     p = p:dwn(); --move down one block
@@ -727,10 +833,10 @@ function Cuboid:doorHole(outDir, features)
   local hasStairs = test.s or false;
   local hasLamps = test.l or false;
   
-  self:box():shr():gro(1, outDir):gro(1, DIR.D):gro(1, dirOpposite(outDir)):erase();
+  self:box():shr():gro(outDir):gro(DIR.D):gro(dirOpposite(outDir)):erase();
   
   if hasStairs then
-    self:fac(outDir):gro(1, DIR.D):box(air, getStairs(dirOpposite(outDir)));
+    self:fac(outDir):gro(DIR.D):box(air, getStairs(dirOpposite(outDir)));
   end
 
   if hasLamps then
@@ -747,48 +853,20 @@ end
 function Coord:bigDoor(outDir, features, depth)
   depth = depth or 0;
   local cube = cuboid(self)
-    :gro(2, dirRotate(outDir, 1))
-    :gro(2, dirRotate(outDir, -1))
-    :gro(3, DIR.U)
-    :gro(depth, dirOpposite(outDir))
+    :gro(dirRotate(outDir, 1), 2)
+    :gro(dirRotate(outDir, -1), 2)
+    :gro(DIR.U, 3)
+    :gro(dirOpposite(outDir), depth)
     :doorHole(outDir, features);
   self:puta(blockState("malisisdoors:big_door_spruce_3x3", "direction=" .. DIR.OPPOSITES[outDir].n ));
   return cube;
 end
 
 function Coord:lamp(dir)
-  return self:puta(blockState("rustic:iron_lantern", "facing=" .. dir.n));
+  return self:cub():fill(blockState("rustic:iron_lantern", "facing=" .. dir.n));
 end
 
 function Coord:lamppost(h)
   h = h or 3;
-  cuboid(self):gro(h - 1, DIR.U):filla(lattice):top()[1]:lamp(DIR.U);
-end
-
-
-function killMaps(x1, y1, z1, x2, y2, z2)
-  commands.kill("@e[type=item_frame,x=" .. x1 .. ",y=" .. y1 .. ",z=" .. z1 .. ",dx=" .. (x2 - x1 + 1) .. ",dy=" .. (y2 - y1 + 1) .. ",dz=" .. (z2 - z1 + 1) .. "]");
-end
-
-
-function map(mapX, mapY, mapZ, mapW, mapH)
-  --Build wall behind map
-  filla(mapX, mapY, mapZ, mapX + mapW - 1, mapY + mapH - 1, mapZ, air); --Clear a spot for the item frames
-  filla(mapX, mapY, mapZ - 1, mapX + mapW - 1, mapY + mapH - 1, mapZ - 1, stonepaver); --Make a wall for the item frames to hang
-
-  local mapNum = 0;
-
-  --Populate wall with an array of maps in itemframes
-  for y = mapH - 1, 0, -1 do
-    for x = 0, mapW - 1 do
-      commands.summon("item_frame", mapX + x, mapY + y, mapZ, "{Facing:0,Item:{id:\"minecraft:filled_map\",Damage:" .. mapNum .. ",Count:1}}");
-      mapNum = mapNum + 1;
-    end
-  end
-
-end
-
-
-function map5x5(maxX, mapY, mapZ)
-  map(maxX, mapY, mapZ, 5, 5);
+  self:cub():gro(DIR.U, h - 1):fill(lattice):top()[1]:lamp(DIR.U);
 end

@@ -11,7 +11,7 @@ dofile("blocks");
 local D, U, N, S, W, E = dirMap(0);
 
 local compy = build.Coord:get();
-local center = compy:off(8 + 3, N):up();
+local center = compy:off(N, 8 + 3):up();
 
 grow = false;
 codesPerRad = 20;

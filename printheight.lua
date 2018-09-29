@@ -42,14 +42,34 @@ function readPgm(input)
   return data;
 end
 
-pgm = readPgm("test.pgm");
+pgm = readPgm("heightmap.pgm");
+halfx = pgm.w / 2;
+halfz = pgm.h / 2;
 
 for z = 0,pgm.h-1 do
   for x = 0,pgm.w-1 do
     local val = pgm.data[(z * pgm.w) + x];
-    --commands.setBlock(x - 8, val, z - 8, "minecraft:diamond_block");
-    commands.fill(x - 8, 0, z - 8, x - 8, val, z - 8, "minecraft:packed_ice");
+    val = tonumber(val);
+	if val ~= 0 then
+      print(x, z, val);
+      --commands.setBlock(x - 8, val, z - 8, "minecraft:diamond_block");
+      commands.async.fill(x - halfx, 2, z - halfz, x - halfx, val, z - halfz, "minecraft:stone");
+      local snowDepth = (val - 70) / 16;
+      snowDepth = math.floor(snowDepth);
+      if snowDepth < 1 then
+        snowDepth = 0
+      end
+      if val > 65 then
+        if snowDepth > 0 then 
+          commands.async.fill(x - halfx, val - snowDepth, z - halfz, x - halfx, val, z - halfz, "minecraft:snow");
+        else
+          commands.async.setblock(x - halfx, val, z - halfz, "biomesoplenty:grass", "variant=overgrown_stone");
+          commands.async.setblock(x - halfx, val + 1, z - halfz, "minecraft:snow_layer");
+        end
+      end
+    end
   end
+  sleep(0.1);
 end
 
 
