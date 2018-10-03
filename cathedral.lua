@@ -154,7 +154,11 @@ function clearstory(pos, turns)
     j:cnr(qturn):bot():gro(U, 3):pillar(build.stonechisel, build.stonechisel);
   end
 
-  j:dunswe(-1, -3, 0, 0, -1, -1, turns):box(build.glass, build.stonecircular, build.glass, build.stonecircular);
+  j = j:dunswe(-1, -1, 0, 0, -1, -1, turns):box(build.glass, build.stonecircular, build.stonecircular, build.stonecircular);
+
+  j:top():up():fill(build.stonedent)
+    :up():off(S):stairsinv(build.stairs, {S})
+    :up():fill(build.stonerailing);
 end
 
 function triforium(pos, turns)
@@ -263,6 +267,52 @@ function cathedralRow(pos, sections, turns)
     local pos = pos:add(build.coord(0, 0, z)):rot(turns);
     cathedralSection(pos, turns);
   end
+  for z = 0,((sections-1)*6),6 do
+    local pos = pos:add(build.coord(0, 0, z + 3)):rot(turns);
+    buttressSection(pos, turns);
+  end
+
+end
+
+function buttress(pos, turns)
+  local D, U, N, S, W, E = dirMap(turns);
+  local body = pos:off(S, 4):cub()
+    :gro(U, 11):gro(D,5):fill(build.stonebrick);
+  
+  body:top():stairs(build.stairs, {S});
+  
+  body = body:off(S)
+    :gro(U,3):fill(build.stonebrick)
+	:off(S):fill(build.stonedent);
+  local bottom = body:bot():fill(build.stonerosette)
+    :dwn():stairsinv(build.stairs, {S})
+    :off(N):gro(N):fill(build.stonedent);
+  body = body
+    :top():roof(build.roofing, {S})
+    :dwn():fill(build.stonepaver)
+    :up(2):off(N):gro(U,4):fill(build.stonedent);
+  body:top():up():gro(U,2):fill(build.stonecircular);
+  local back = body:off(N):gro(U):gro(D):fill(build.stonebrick);
+  back:off(N):gro(D,3):fill(build.stonebrick):top()
+    :gro(N,4):stairs(build.roofing, {S})
+    :shr(S):dwn():stairs(build.airstairs, {S})
+    :up(3):stairsinv(build.stairs, {N}, 0)
+    :dwn(3):fac(S):fill(build.stonebrick)
+    :dwn():stairsinv(build.stairs, {N});
+  back:off(D,3):off(N,6):fill(build.stonedent)
+    :top():fill(build.stonerosette)
+    :up():gro(U,7):fill(build.stonedent)
+    :top():fill(build.stonerosette)
+    :up():gro(U,2):fill(build.stoneknot)
+    :top():fill(build.stonerosette)
+    :up():fill(build.stonebrick)
+    :up():gro(U,2):fill(build.stonecircular);
+end
+
+function buttressSection(pos, turns)
+  turns = turns or 0;
+  buttress(pos:add(build.coord(-11, 0, 0):rot(turns)), turns + 1);
+  buttress(pos:add(build.coord( 11, 0, 0):rot(turns)), turns - 1);
 end
 
 function cathedralWings(pos, turns)
@@ -438,7 +488,7 @@ function mainPlatform(pos, turns)
   local platSpan = 33;
   local roundOffset = 32;
   local plat = build.cuboid(pos):dunswe(0, 1, platWidth, platWidth, platSpan, platSpan, turns);
-  local cross = build.cuboid(pos):dunswe(0, 1, roundOffset, 47, platWidth, platWidth, turns);
+  local cross = build.cuboid(pos):dunswe(0, 1, roundOffset, 52, platWidth, platWidth, turns);
   
   plat:fill(build.stone);
 
@@ -479,9 +529,9 @@ end
 function scene(pos, turns)
   print("Scene: " .. tostring(pos));
   local D, U, N, S, W, E = dirMap(turns);
-  --mainPlatform(pos, turns);
-  --spawnPlatform(pos:off(S, 67), turns);
-  --cathedral(pos, turns);
+  mainPlatform(pos, turns);
+  spawnPlatform(pos:off(S, 67), turns);
+  cathedral(pos, turns);
 end
 
 function sideEntrance(pos, turns, height)
@@ -516,14 +566,50 @@ function tower(pos, turns, height)
   pos:cuboid():grohor(2):gro(U, height):box();
 end
 
+function faceTower(pos, turns, mir)
+  local D, U, N, S, W, E = dirMap(turns);
+  if mir then
+    local axis = build.dirAxis(E);
+    D, U, N, S, W, E = unpack(build.dirMirrorTable({D, U, N, S, W, E}, build.dirAxis(E)));
+  end
+  pos = pos:off(E, 11);
+  local body = pos:cub();
+  body = body:dwn():gro(nil, 5):gro(U, 7);
+  body = body:shrhor();
+  for _,c in body:cnriter() do
+    c:grohor(2):box();
+  end
+  for _,dir in pairs({W, E}) do
+    local side = body:fac(S):off(S,4):fac(dir):grohor():gro(D,3):shr(U,3):fill(build.stonecircular);
+  end
+  for _,dir in pairs({S, N}) do
+    local side = body:fac(E):off(E,4):fac(dir):grohor():gro(D,3):shr(U,3):fill(build.stonecircular);
+  end
+  body:grohor():fill(build.stone);
+  local fence = pos:cub():grohor():gro(S,4):dwn():gro(D,3):erase()
+    :fac(S):dwn(4):gro(E):gro(W):off(S):gro(S,3):box()
+    :shr(E):shr(W):erase():stairs(build.stairs, {S})
+    :fac(S):fac(D):dwn():mid():off(S,2):grohor(2):box()
+    :shr(N):up():loop(build.stonerailing, build.stonerailing, {S,E})
+    :fac(S):up():fillcrn(build.stonerailing);
+  
+  body:top():up():gro(U,11):shrhor():box()
+    :top():up():gro(U,3):box()
+    :top():up():gro(U,9):shrhor():box()
+    :top():up():gro(U,9):shrhor():box();
+end
+
+function face(pos, turns)
+  faceTower(pos, turns, false);
+  faceTower(pos, turns, true);
+end
+
+
 
 --build.setErase(true);
 
---test = build.coord(-37, 125, 15);
---hangingTreePlanter(test, 0);
-
-
-
+--test = build.coord(0, 125, 42);
+--buttressSection(test, 0);
 
 --towertest = build.coord(31, 126, 7);
 --tower(towertest, 0, 30);
@@ -532,3 +618,9 @@ end
 --towertest2:cuboid():dunswe(0, 8, 1, 2, 2, 2, rotate):box();
 
 scene(centerPos, rotate);
+
+test = build.coord(0, 125, 47);
+face(test, 0);
+
+test2 = build.coord(11, 136, 49);
+aisleFacade(test2, 0, false, 9)

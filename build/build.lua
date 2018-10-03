@@ -224,7 +224,7 @@ end
 
 function dirMirrorTable(dir, axis)
   local r = {};
-  for k,v in pairs(dirs) do
+  for k,v in pairs(dir) do
     r[k] = dirMirror(v, axis);
   end
   return r;
@@ -411,10 +411,11 @@ function Cuboid:mir(axis, a)
   return Cuboid:new(self[1]:mir(axis, a), self[2]:mir(axis, a));
 end
 
-function Cuboid:len(axis)
-  if axis.x ~= 0 then return self[2].x - self[1].x + 1; end;
-  if axis.y ~= 0 then return self[2].y - self[1].y + 1; end;
-  if axis.z ~= 0 then return self[2].z - self[1].z + 1; end;
+function Cuboid:miriter(axis, a)
+  result = {};
+  result[0] = self:cpy();
+  result[1] = mir(axis, a);
+  return result;
 end
 
 function Cuboid:gro(dir, amount)
@@ -467,6 +468,14 @@ end
 
 function Cuboid:cnr(c)
   return self:fac(Coord:new(-1, 0, -1):rot(c or 0));
+end
+
+function Cuboid:cnriter()
+  corners = {};
+  for c = 0,3 do
+    corners[c] = self:cnr(c);
+  end
+  return pairs(corners);
 end
 
 function Cuboid:top()
@@ -534,9 +543,9 @@ function Cuboid:zlen()
 end
 
 function Cuboid:len(axis)
-  if axis == 'x' then return self:xlen(); end;
-  if axis == 'y' then return self:ylen(); end;
-  if axis == 'z' then return self:zlen(); end;
+  if axis.x ~= 0 then return self:xlen(); end;
+  if axis.y ~= 0 then return self:ylen(); end;
+  if axis.z ~= 0 then return self:zlen(); end;
 end
 
 function Cuboid:vol()
@@ -601,16 +610,17 @@ function Cuboid:checker()
   return self;
 end
 
+function Cuboid:fillcrn(state)
+  for _,c in self:cnriter() do c:fill(state); end
+  return self;
+end
+
 function Cuboid:loop(state, corners, sides)
   state = state or stone;
   sides = sides or {DIR.N, DIR.S, DIR.W, DIR.E};
   for _,side in pairs(sides) do
-    self:fac(side):fill(state);
-  end
-  if(corners ~= nil) then
-    for qturn = 0, 3 do
-      self:fac(coord(-1, 0, -1):rot(qturn)):fill(corners);
-    end
+    local k = self:fac(side):fill(state);
+    if(corners ~= nil) then k:fillcrn(corners); end
   end
   return self;
 end
@@ -628,23 +638,23 @@ function Cuboid:fence(sides)
   for _,side in pairs(sides) do
     if(side == DIR.N) then
       for i = 0, xlen, 3 do
-        coord(work[1].x + i, y, work[1].z):puta(stonerailing);
-        coord(work[2].x - i, y, work[1].z):puta(stonerailing);
+        coord(work[1].x + i, y, work[1].z):cub():fill(stonerailing);
+        coord(work[2].x - i, y, work[1].z):cub():fill(stonerailing);
       end
     elseif(side == DIR.S) then
       for i = 0, xlen, 3 do
-        coord(work[1].x + i, y, work[2].z):puta(stonerailing);
-        coord(work[2].x - i, y, work[2].z):puta(stonerailing);
+        coord(work[1].x + i, y, work[2].z):cub():fill(stonerailing);
+        coord(work[2].x - i, y, work[2].z):cub():fill(stonerailing);
       end
     elseif(side == DIR.W) then
       for i = 0, zlen, 3 do
-        coord(work[1].x, y, work[1].z + i):puta(stonerailing);
-        coord(work[1].x, y, work[2].z - i):puta(stonerailing);
+        coord(work[1].x, y, work[1].z + i):cub():fill(stonerailing);
+        coord(work[1].x, y, work[2].z - i):cub():fill(stonerailing);
       end
     elseif(side == DIR.E) then
       for i = 0, zlen, 3 do
-        coord(work[2].x, y, work[1].z + i):puta(stonerailing);
-        coord(work[2].x, y, work[2].z - i):puta(stonerailing);
+        coord(work[2].x, y, work[1].z + i):cub():fill(stonerailing);
+        coord(work[2].x, y, work[2].z - i):cub():fill(stonerailing);
       end
     end
   end
@@ -766,9 +776,9 @@ function Cuboid:stairs(stairBlocks, sides, filler)
   
   if(test[DIR.W] and test[DIR.E]) then xlen = math.floor(xlen / 2); end
   if(test[DIR.N] and test[DIR.S]) then zlen = math.floor(zlen / 2); end
-  
-  local h = math.min(xlen, zlen);
 
+  local h = math.min(xlen, zlen);
+  
   if(#sides == 1) then
     local lens = {x = xlen, z = zlen};
     local axis = sides[next(sides)].a;

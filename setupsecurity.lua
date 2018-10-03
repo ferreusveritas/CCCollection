@@ -23,3 +23,6 @@ for _,t in ipairs(types) do
 end
 
 compyPos:dwn():cub():erase();
+
+commands.gamerule("logAdminCommands", false);
+commands.gamerule("commandBlockOutput", false);
