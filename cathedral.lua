@@ -250,6 +250,7 @@ function aisle(pos, turns)
   triforium(pos, turns);
   clearstory(pos:up(15), turns);
   vault(pos, turns);
+  pos:up(7):hangingLamp(5);
   naveCeiling(pos:up(19), turns);
   naveRoof(pos:up(27):off(N, 3), turns);
   aisleFacade(pos:off(S, 4):dwn(), turns, true);
@@ -572,6 +573,9 @@ function faceTower(pos, turns, mir)
     local axis = build.dirAxis(E);
     D, U, N, S, W, E = unpack(build.dirMirrorTable({D, U, N, S, W, E}, build.dirAxis(E)));
   end
+
+  build.setBoxMaterials(build.stone, build.stonewide, build.stonechisel, build.stonechisel, build.stonepaver, build.stonerosette);
+
   pos = pos:off(E, 11);
   local body = pos:cub();
   body = body:dwn():gro(nil, 5):gro(U, 7);
@@ -593,15 +597,37 @@ function faceTower(pos, turns, mir)
     :shr(N):up():loop(build.stonerailing, build.stonerailing, {S,E})
     :fac(S):up():fillcrn(build.stonerailing);
   
-  body:top():up():gro(U,11):shrhor():box()
-    :top():up():gro(U,3):box()
+  local tower = body:top():up():gro(U,11):shrhor():box();
+  tower:shr():gro(D):erase();
+  aisleFacade(tower:fac(S):bot():mid():pos():off(N):dwn(), turns, false, 9);
+  aisleFacade(tower:fac(E):bot():mid():pos():off(W):dwn(), turns + fif(mir, 1, -1), false, 9);
+  tower:fac(N):gro(N,3):box();
+
+  tower:top():up():gro(U,3):box()
     :top():up():gro(U,9):shrhor():box()
     :top():up():gro(U,9):shrhor():box();
+
+  build.defaultBoxMaterials();
 end
 
 function face(pos, turns)
+  local D, U, N, S, W, E = dirMap(turns);
+  pos:cub():up(12):grohor():gro(W,6):gro(E,6):gro(U,11):box()
+    :top():up():dunswe(0,3,5,1,1,1,turns):box()
+    :top():up():fence({S});
+  
   faceTower(pos, turns, false);
   faceTower(pos, turns, true);
+  
+  pos:cub():off(S,4):up():dunswe(0,9,1,1,4,4,turns):box()
+    :top():up():gro(N):stone()
+    :fac(S):off(S):stairsinv(nil, {S});
+ 
+  for _,side in pairs({W,E}) do
+  pos:cub():off(S,4):off(side,2):up()
+    :dunswe(0,3,1,1,1,1):erase()
+    :off(S):bot():pos():bigDoor(S, {"l"}, 2);
+  end
 end
 
 
@@ -621,6 +647,3 @@ scene(centerPos, rotate);
 
 test = build.coord(0, 125, 47);
 face(test, 0);
-
-test2 = build.coord(11, 136, 49);
-aisleFacade(test2, 0, false, 9)
