@@ -133,7 +133,7 @@ function Display:getTile(x, y)
   return self.startIndex + y * self.w + x;
 end
 
-function Display:shiftLeft()
+function Display:shiftLeft(name)
   local numMaps = self.w * self.h;
   for i = 0,(numMaps - 2) do
     cart.swapMapData(i, (i + 1) % numMaps);
@@ -144,14 +144,14 @@ function Display:shiftLeft()
     self:blackTile(self.w - 1, i);
   end
   if self.content ~= nil then
-    self.content:shiftLeft();
+    self.content:shiftLeft(name);
   end
   for y = 0,self.h-1 do
     self.content:updateTile(self.w - 1, y);
   end
 end
 
-function Display:shiftRight()
+function Display:shiftRight(name)
   local numMaps = self.w * self.h;
   for i = (numMaps - 2),0,-1 do
     cart.swapMapData(i, (i + 1) % numMaps);
@@ -161,14 +161,14 @@ function Display:shiftRight()
     self:blackTile(0, i);
   end  
   if self.content ~= nil then
-    self.content:shiftRight();
+    self.content:shiftRight(name);
   end
   for y = 0,self.h-1 do
     self.content:updateTile(0, y);
   end
 end
 
-function Display:shiftUp()
+function Display:shiftUp(name)
   local numMaps = self.w * self.h;
   for i = 0,(numMaps - self.w - 1) do
     cart.swapMapData(i, (i + self.w) % numMaps);
@@ -178,14 +178,14 @@ function Display:shiftUp()
     self:blackTile(i, self.h - 1);
   end
   if self.content ~= nil then
-    self.content:shiftUp();
+    self.content:shiftUp(name);
   end
   for x = 0,self.w-1 do
     self.content:updateTile(x, self.h - 1);
   end
 end
 
-function Display:shiftDown()
+function Display:shiftDown(name)
   local numMaps = self.w * self.h;
   for i = (numMaps - self.w - 1),0,-1 do
     cart.swapMapData(i, (i + self.w) % numMaps);
@@ -195,11 +195,19 @@ function Display:shiftDown()
     self:blackTile(i, 0);
   end
   if self.content ~= nil then
-    self.content:shiftDown();
+    self.content:shiftDown(name);
   end
   for x = 0,self.w-1 do
     self.content:updateTile(x, 0);
   end
+end
+
+function Display:zoomIn(user)
+  self.content:zoomIn(user);
+end
+
+function Display:zoomOut(user)
+  self.content:zoomOut(user);
 end
 
 function Display:rebuildContents()
@@ -326,23 +334,23 @@ function Content:updateTile(x, y)
   cart.updateMap(mapNum);
 end
 
-function Content:shiftLeft()
+function Content:shiftLeft(name)
   self.worldX = self.worldX + 1;
 end
 
-function Content:shiftRight()
+function Content:shiftRight(name)
   self.worldX = self.worldX - 1;
 end
 
-function Content:shiftUp()
+function Content:shiftUp(name)
   self.worldZ = self.worldZ + 1;
 end
 
-function Content:shiftDown()
+function Content:shiftDown(name)
   self.worldZ = self.worldZ - 1;
 end
 
-function Content:zoom(level)
+function Content:zoom(level, name)
   local prevZoomLevel = self.zoomLevel;
   self.zoomLevel = math.floor(level);
   if self.zoomLevel < 0 then self.zoomLevel = 0; end
@@ -356,18 +364,18 @@ function Content:zoom(level)
     self.worldX = self.worldX / 2;
     self.worldZ = self.worldZ / 2;
   end
-  commands.tellraw("@a", "{\"text\":\"Zoom Level: " .. self.zoomLevel .. " ( 1 pixel = " .. self.scale .. " blocks)\"}");
+  commands.tellraw(name, "{\"text\":\"Zoom Level: " .. self.zoomLevel .. " ( 1 pixel = " .. self.scale .. " blocks)\"}");
   if zoomDelta ~= 0 then 
     self.display:rebuildContents();
   end
 end
 
-function Content:zoomIn()
-  self:zoom(self.zoomLevel - 1);
+function Content:zoomIn(name)
+  self:zoom(self.zoomLevel - 1, name);
 end
 
-function Content:zoomOut()
-    self:zoom(self.zoomLevel + 1);
+function Content:zoomOut(name)
+    self:zoom(self.zoomLevel + 1, name);
 end
 
 function Content:click(x, y, name)
@@ -481,12 +489,12 @@ function makeButton(pos, action)
 end
 
 buttons = {};
-buttons.right   = makeButton(build.coord( 3, 129, 0), function() disp:shiftLeft(); end);
-buttons.left    = makeButton(build.coord(-3, 129, 0), function() disp:shiftRight(); end);
-buttons.up      = makeButton(build.coord( 0, 132, 0), function() disp:shiftDown(); end);
-buttons.down    = makeButton(build.coord( 0, 126, 0), function() disp:shiftUp(); end);
-buttons.zoomIn  = makeButton(build.coord( 2, 126, 0), function() content:zoomIn(); end);
-buttons.zoomOut = makeButton(build.coord( 3, 126, 0), function() content:zoomOut(); end);
+buttons.right   = makeButton(build.coord( 3, 129, 0), function(name) disp:shiftLeft(name); end);
+buttons.left    = makeButton(build.coord(-3, 129, 0), function(name) disp:shiftRight(name); end);
+buttons.up      = makeButton(build.coord( 0, 132, 0), function(name) disp:shiftDown(name); end);
+buttons.down    = makeButton(build.coord( 0, 126, 0), function(name) disp:shiftUp(name); end);
+buttons.zoomIn  = makeButton(build.coord( 2, 126, 0), function(name) disp:zoomIn(name); end);
+buttons.zoomOut = makeButton(build.coord( 3, 126, 0), function(name) disp:zoomOut(name); end);
 
 while true do
   local event, name, id, hit, blk = os.pullEvent("remote_control");
@@ -497,7 +505,7 @@ while true do
   if not handled then
     for _,b in pairs(buttons) do
       if b.pos:eq(blk) then
-        b.action();
+        b.action(name);
         handled = true;
       end
     end

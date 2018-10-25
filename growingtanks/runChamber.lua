@@ -26,15 +26,15 @@ monitor.clear();
 mainTimer = 0;
 
 function startTimer()
-mainTimer = os.startTimer(0.5);
+  mainTimer = os.startTimer(0.5);
 end
 
 function stopTimer()
-os.cancelTimer(mainTimer);
+  os.cancelTimer(mainTimer);
 end
 
 ----------------------------------------------------------------
--- BUTTONS                                                --
+-- BUTTONS                                                    --
 ----------------------------------------------------------------
 
 Button = {}
@@ -103,8 +103,8 @@ end
 
 function kill()
   coil.killTree(center.x, center.y, center.z);
-  center:up():erase();--In the case of a sapling
-  center:put(dirt);
+  center:up():cub():erase();--In the case of a sapling
+  center:cub():fill(dirt);
   --commands.kill("@e[type=item]");
 end
 
@@ -184,7 +184,8 @@ while true do
   event, par1, xPos, yPos = os.pullEvent();
   if(event == "monitor_touch") then
     stopTimer();
-    clickScreen(xPos, yPos)
+    clickScreen(xPos, yPos);
+    sleep(0.25);
     startTimer();
   end
   if(event == "timer") then
@@ -213,7 +214,7 @@ while true do
       end
       countButton:setCount(count);
     end
-    sleep(0.1);
+    sleep(0.25);
     if grow then 
       plant();
     end
